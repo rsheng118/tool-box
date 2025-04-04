@@ -55,14 +55,6 @@ RUN mv google-cloud-sdk /usr/local/google-cloud-sdk
 RUN /usr/local/google-cloud-sdk/install.sh --quiet
 RUN rm -rf google_cli.zip
 
-# RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-# RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-
-# RUN apt update && apt install -y google-cloud-cli \
-#                                     google-cloud-cli-gke-gcloud-auth-plugin
-# RUN mkdir -p /opt/homebrew/share/google-cloud-sdk/bin && \
-#     cp /usr/bin/gke-gcloud-auth-plugin /opt/homebrew/share/google-cloud-sdk/bin/gke-gcloud-auth-plugin
-
 ## install aws cli
 RUN if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o awscliv2.zip; \
@@ -74,6 +66,21 @@ RUN rm -rf aws && rm awscliv2.zip
 
 ## install azure cli
 RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+## config okta-awscli
+RUN pip3 install okta-awscli --break-system-packages
+RUN cp -rf $(python3 -m site --user-site)/oktaawscli /home/$LOCAL_USER/.oktaawscli
+
+
+## install helm
+RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+## install cilium cli
+RUN CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt) && CLI_ARCH=$(uname -m)
+RUN if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+RUN curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz
+RUN tar -xzvf cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+RUN rm cilium-linux-${CLI_ARCH}.tar.gz
 
 # install powershell
 RUN if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then \
@@ -114,18 +121,16 @@ RUN usermod -aG sudo $LOCAL_USER
 RUN echo "$LOCAL_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/nopass
 USER $LOCAL_USER
 WORKDIR /home/$LOCAL_USER
+
 ## install omz
 RUN curl -fsSL "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh" > install.sh
 RUN chmod u+x install.sh && y | ./install.sh
 RUN rm install.sh
 RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+
 ## install powerlevel10k
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
-## config okta-awscli
-RUN pip3 install okta-awscli --break-system-packages
-RUN cp -rf $(python3 -m site --user-site)/oktaawscli /home/$LOCAL_USER/.oktaawscli
-## install helm
-RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 
 # copy files
 COPY --chown=$LOCAL_USER:$LOCAL_USER --chmod=644 p10k.zsh .p10k.zsh
