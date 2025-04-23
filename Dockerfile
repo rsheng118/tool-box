@@ -101,6 +101,25 @@ RUN ARGOCD_VERSION=$(curl --silent "https://api.github.com/repos/argoproj/argo-c
     fi; \
     chmod +x /tmp/argocd && mv /tmp/argocd /usr/local/bin/argocd 
 
+## install kubectl
+RUN if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then \
+        curl -L -o kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl" ;\
+    else \
+        curl -L -o kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"; \
+    fi; \
+    chmod 777 kubectl; \
+    mv kubectl /usr/bin
+
+## install cilium cli
+RUN CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt) && \
+    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; \
+    else CLI_ARCH=amd64; fi && \
+    curl -L -o /tmp/cilium.tar.gz --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz; \
+    tar -xzvf /tmp/cilium.tar.gz; \
+    chmod 777 cilium; \
+    mv cilium /usr/bin; \
+    rm /tmp/cilium.tar.gz
+
 ## setup user env
 RUN useradd -ms /bin/zsh $LOCAL_USER
 RUN usermod -aG sudo $LOCAL_USER
@@ -125,13 +144,6 @@ RUN pip3 install okta-awscli --break-system-packages && \
 ## install helm
 RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-## install cilium cli
-RUN CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt) && \
-    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; \
-    else CLI_ARCH=amd64; fi && \
-    curl -L -o /tmp/cilium.tar.gz --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz; \
-    tar -xzvf /tmp/cilium.tar.gz /usr/local/bin; \
-    rm /tmp/cilium.tar.gz
 
 ## copy files
 COPY --chown=$LOCAL_USER:$LOCAL_USER --chmod=644 p10k.zsh .p10k.zsh

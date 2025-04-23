@@ -15,3 +15,5 @@ docker run -it --name toolbox harbor.rsheng.org/public/tool-box:latest /bin/bash
 
 docker build --tag tool-box:latest .
 docker buildx build --platform linux/arm64,linux/amd64 --tag tool-box:latest .
+
+## push push image
