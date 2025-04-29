@@ -116,5 +116,5 @@ if [ -f '/usr/local/google-cloud-sdk/path.zsh.inc' ]; then . '/usr/local/google-
 # okta-awscli
 [[ ! -f $HOME/.oktaawscli/okta_awscli.py ]] || alias okta-awscli="python3 $HOME/.oktaawscli/okta_awscli.py"
 
-# sync configs
-[[ ! -f $HOME/.sync/shrc ]] || source ~/.sync/shrc
+[[ ! -f $HOME/.alias ]] || source ~/.alias
+

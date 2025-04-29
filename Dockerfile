@@ -120,6 +120,12 @@ RUN CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium
     mv cilium /usr/bin; \
     rm /tmp/cilium.tar.gz
 
+## install terraform
+RUN wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg; \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list; \
+    apt update && apt install terraform
+
+
 ## setup user env
 RUN useradd -ms /bin/zsh $LOCAL_USER
 RUN usermod -aG sudo $LOCAL_USER
@@ -148,6 +154,7 @@ RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | b
 ## copy files
 COPY --chown=$LOCAL_USER:$LOCAL_USER --chmod=644 p10k.zsh .p10k.zsh
 COPY --chown=$LOCAL_USER:$LOCAL_USER --chmod=644 zshrc .zshrc
+COPY --chown=$LOCAL_USER:$LOCAL_USER --chmod=644 alias .alias
 
 ## USER root
 ENTRYPOINT [ "/bin/zsh" ]
