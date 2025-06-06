@@ -21,6 +21,8 @@ RUN apt install -y sudo \
                     netcat-openbsd \
                     nano \
                     vim \
+                    jq \
+                    yq \
                     zip \
                     unzip \
                     htop \
@@ -119,6 +121,14 @@ RUN CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium
     chmod 777 cilium; \
     mv cilium /usr/bin; \
     rm /tmp/cilium.tar.gz
+
+## install terraform tenv
+RUN LATEST_VERSION=$(curl -s https://api.github.com/repos/tofuutils/tenv/releases/latest | jq -r .tag_name) && \
+    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; \
+    else CLI_ARCH=amd64; fi && \
+    curl -L -o /tmp/tenv.deb "https://github.com/tofuutils/tenv/releases/latest/download/tenv_${LATEST_VERSION}_${CLI_ARCH}.deb"; \
+    dpkg -i /tmp/tenv.deb; \
+    rm /tmp/tenv.deb
 
 ## setup user env
 RUN useradd -ms /bin/zsh $LOCAL_USER
