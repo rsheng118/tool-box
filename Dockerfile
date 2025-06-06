@@ -144,6 +144,11 @@ RUN pip3 install okta-awscli --break-system-packages && \
 ## install helm
 RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+## install helm plugin
+RUN helm plugin install https://github.com/helm-unittest/helm-unittest.git
+
+## install kubectl plugin
+RUN kubectl krew install oidc-login
 
 ## copy files
 COPY --chown=$LOCAL_USER:$LOCAL_USER --chmod=644 p10k.zsh .p10k.zsh
