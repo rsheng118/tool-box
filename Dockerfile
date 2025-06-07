@@ -35,7 +35,7 @@ RUN apt install -y sudo \
                     kubectx \
                     fonts-font-awesome \
                     apt-transport-https \
-                    ca-certificates 
+                    ca-certificates
 
 ## install python
 RUN apt install -y python${PYTHON_VERSION}
@@ -130,6 +130,15 @@ RUN LATEST_VERSION=$(curl -s https://api.github.com/repos/tofuutils/tenv/release
     dpkg -i /tmp/tenv.deb; \
     rm /tmp/tenv.deb
 
+## install kubelogin
+RUN LATEST_VERSION=$(curl -s https://api.github.com/repos/Azure/kubelogin/releases/latest | jq -r .tag_name) && \
+    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; \
+    else CLI_ARCH=amd64; fi && \
+    curl -L -o /tmp/kubelogin.zip "https://github.com/Azure/kubelogin/releases/download/${LATEST_VERSION}/kubelogin-linux-${CLI_ARCH}.zip"; \
+    unzip /tmp/kubelogin.zip -d /tmp/kubelogin; \
+    mv /tmp/kubelogin/bin/linux_${CLI_ARCH}/kubelogin /usr/bin/; \
+    rm -rf /tmp/*
+
 ## setup user env
 RUN useradd -ms /bin/zsh $LOCAL_USER
 RUN usermod -aG sudo $LOCAL_USER
@@ -157,8 +166,6 @@ RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | b
 ## install helm plugin
 RUN helm plugin install https://github.com/helm-unittest/helm-unittest.git
 
-## install kubectl plugin
-RUN kubectl krew install oidc-login
 
 ## copy files
 COPY --chown=$LOCAL_USER:$LOCAL_USER --chmod=644 p10k.zsh .p10k.zsh
