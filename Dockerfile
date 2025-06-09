@@ -130,14 +130,16 @@ RUN LATEST_VERSION=$(curl -s https://api.github.com/repos/tofuutils/tenv/release
     dpkg -i /tmp/tenv.deb; \
     rm /tmp/tenv.deb
 
-## install kubelogin
-RUN LATEST_VERSION=$(curl -s https://api.github.com/repos/Azure/kubelogin/releases/latest | jq -r .tag_name) && \
-    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; \
-    else CLI_ARCH=amd64; fi && \
-    curl -L -o /tmp/kubelogin.zip "https://github.com/Azure/kubelogin/releases/download/${LATEST_VERSION}/kubelogin-linux-${CLI_ARCH}.zip"; \
-    unzip /tmp/kubelogin.zip -d /tmp/kubelogin; \
-    mv /tmp/kubelogin/bin/linux_${CLI_ARCH}/kubelogin /usr/bin/; \
-    rm -rf /tmp/*
+## install krew plugin manager
+RUN ( \
+    set -x; cd "$(mktemp -d)" && \
+    OS="$(uname | tr '[:upper:]' '[:lower:]')" && \
+    ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" && \
+    KREW="krew-${OS}_${ARCH}" && \
+    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" && \
+    tar zxvf "${KREW}.tar.gz" && \
+    ./"${KREW}" install krew \
+    )
 
 ## setup user env
 RUN useradd -ms /bin/zsh $LOCAL_USER
@@ -159,6 +161,22 @@ RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTO
 ## config okta-awscli
 RUN pip3 install okta-awscli --break-system-packages && \
     cp -rf $(python3 -m site --user-site)/oktaawscli /home/$LOCAL_USER/.oktaawscli
+
+## setup krew path
+RUN ( \
+    set -x; cd "$(mktemp -d)" && \
+    OS="$(uname | tr '[:upper:]' '[:lower:]')" && \
+    ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" && \
+    KREW="krew-${OS}_${ARCH}" && \
+    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" && \
+    tar zxvf "${KREW}.tar.gz" && \
+    ./"${KREW}" install krew \
+    )
+
+## install kubectl plugins
+RUN export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"; \
+    kubectl krew install oidc-login; \
+    kubectl krew install kc
 
 ## install helm
 RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
